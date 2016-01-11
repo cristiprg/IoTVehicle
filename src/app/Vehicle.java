@@ -19,16 +19,44 @@ public class Vehicle{
 	
 	private String brokerAddress = "";
 	private String licensePlate = "BUTTSEX";
+	CoapClient coapClient = null;
+	
+	private void log(String message){
+		System.out.println("Vehicle "  + licensePlate + ": " + message);
+	}
 	
 	public Vehicle() throws IOException {
 
-		System.out.println("Vehicle "  + licensePlate + ": discovering broker ...");
-		brokerAddress = disoverBroker();
+		log("discvering broker ...");
 		
-		if (brokerAddress.equals(""))
-			System.out.println("Vehicle "  + licensePlate + ": could not find broker!");
-		else
-			System.out.println("Vehicle "  + licensePlate + ": found broker at " + brokerAddress);
+		
+		int nrTries = 3;
+		while (brokerAddress.equals("") && --nrTries >= 0){
+			brokerAddress = disoverBroker();
+		}
+		
+		if (brokerAddress.equals("")){
+			log("could not find broker!");
+		
+			// it dies
+		}
+		else{
+			log("found broker at " + brokerAddress);
+			
+			// it's good, now connect to the coap server
+			CoapClient coapClient = new CoapClient("coap://" + brokerAddress + ":5683");
+					
+			
+			// TODO: change here to POST - register the vehicle
+			Request request = new Request(Code.GET);
+			request.setURI("/.well-known/core");
+			
+			log("sending the get request ...");			
+			CoapResponse coapResponse = coapClient.advanced(request);
+			
+			System.out.println(coapResponse.getResponseText());
+			
+		}	
 	}
 	
 	private String disoverBroker() {
@@ -49,9 +77,10 @@ public class Vehicle{
 		// TODO: check out this thing
 		// if there are more brokers, consider just the first
 		ServiceInfo[] serviceInfos = brokerService.list(brokerServiceType);
+		System.out.println("length = " + serviceInfos.length);
 		if (serviceInfos.length > 0)
 			brokerAddress = serviceInfos[0].getAddress().getHostAddress();
-		
+			
 		try {
 			brokerService.close();
 		} catch (IOException e) {
