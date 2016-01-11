@@ -5,6 +5,7 @@ import org.eclipse.californium.core.CoapResponse;
 import org.eclipse.californium.core.coap.Request;
 import org.eclipse.californium.core.coap.Response;
 import org.eclipse.californium.core.coap.CoAP.Code;
+import org.eclipse.californium.core.coap.OptionSet;
 
 import java.io.IOException;
 
@@ -48,13 +49,16 @@ public class Vehicle{
 					
 			
 			// TODO: change here to POST - register the vehicle
-			Request request = new Request(Code.GET);
-			request.setURI("/.well-known/core");
+			Request request = new Request(Code.POST);
+			OptionSet optionSet = new OptionSet();
+			optionSet.addURIPath("Register");
+			optionSet.addURIQuery("DriverID="+licensePlate);
+			request.setOptions(optionSet);
 			
 			log("sending the get request ...");			
 			CoapResponse coapResponse = coapClient.advanced(request);
 			
-			System.out.println(coapResponse.getResponseText());
+			log("response: " + coapResponse.getCode() + " " + coapResponse.getResponseText());
 			
 		}	
 	}
@@ -77,7 +81,6 @@ public class Vehicle{
 		// TODO: check out this thing
 		// if there are more brokers, consider just the first
 		ServiceInfo[] serviceInfos = brokerService.list(brokerServiceType);
-		System.out.println("length = " + serviceInfos.length);
 		if (serviceInfos.length > 0)
 			brokerAddress = serviceInfos[0].getAddress().getHostAddress();
 			
