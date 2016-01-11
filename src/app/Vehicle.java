@@ -33,6 +33,7 @@ public class Vehicle{
 	
 	private String disoverBroker() {
 		String brokerServiceType = "_coap._udp.local.";
+		String brokerAddress = "";
 		JmDNS brokerService = null;
 		try {
 			// create instance of service
@@ -48,7 +49,8 @@ public class Vehicle{
 		// TODO: check out this thing
 		// if there are more brokers, consider just the first
 		ServiceInfo[] serviceInfos = brokerService.list(brokerServiceType);
-		ServiceInfo info = serviceInfos[0];
+		if (serviceInfos.length > 0)
+			brokerAddress = serviceInfos[0].getAddress().getHostAddress();
 		
 		try {
 			brokerService.close();
@@ -56,7 +58,7 @@ public class Vehicle{
 			e.printStackTrace();
 		}
 		
-		return info.getAddress().getHostAddress();
+		return brokerAddress;
 	}
 
 	/**
