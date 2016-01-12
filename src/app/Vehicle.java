@@ -15,6 +15,7 @@ import java.io.IOException;
 import java.net.ResponseCache;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Random;
 import java.util.Scanner;
 
 import javax.jmdns.*;
@@ -27,7 +28,7 @@ import javax.jmdns.*;
 public class Vehicle{
 	
 	private String brokerAddress = "";
-	private String licensePlate = "SURPRIZE_BUTTSEXXXXXXXXXXXXXXXXXX";
+	private String licensePlate = "Vehicle-" + new Random().nextInt(20) + "-7";
 	private int parkingDuration = 0;
 	CoapClient coapClient = null;
 	
