@@ -27,7 +27,7 @@ import javax.jmdns.*;
 public class Vehicle{
 	
 	private String brokerAddress = "";
-	private String licensePlate = "BUTTSEXXXXXXXXXXXXXXXXXX";
+	private String licensePlate = "SURPRIZE_BUTTSEXXXXXXXXXXXXXXXXXX";
 	private int parkingDuration = 0;
 	CoapClient coapClient = null;
 	
@@ -118,6 +118,21 @@ public class Vehicle{
 				
 		// NOT as the protocol - without the first "NumFreeSpots":INT
 		log("received : " + freeParkingSpots);
+		
+		// TODO: let user decide !!!!!!!!!!!!!!!!!!!!!!
+		String selectedParkingSpot = freeParkingSpots.get(0);
+		
+		
+		// prepare the request - POST /ReserveSpot?SpotID=ID&DriverID=ID
+		request = new Request(Code.POST);
+		optionSet = new OptionSet();
+		optionSet.addURIPath("ReserveSpot");
+		optionSet.addURIQuery("SpotID=" + selectedParkingSpot + "&DriverID=" + licensePlate);
+		request.setOptions(optionSet);
+		log("Sending reservation request for " + selectedParkingSpot);
+		coapResponse = coapClient.advanced(request);
+		
+		log("received " + coapResponse.getCode());
 	}
 	
 	private String disoverBroker() {
