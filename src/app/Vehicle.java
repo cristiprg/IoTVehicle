@@ -4,10 +4,18 @@ import org.eclipse.californium.core.CoapClient;
 import org.eclipse.californium.core.CoapResponse;
 import org.eclipse.californium.core.coap.Request;
 import org.eclipse.californium.core.coap.Response;
+
+import com.google.gson.Gson;
+
 import org.eclipse.californium.core.coap.CoAP.Code;
+import org.eclipse.californium.core.coap.CoAP.ResponseCode;
 import org.eclipse.californium.core.coap.OptionSet;
 
 import java.io.IOException;
+import java.net.ResponseCache;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Scanner;
 
 import javax.jmdns.*;
 
@@ -19,7 +27,8 @@ import javax.jmdns.*;
 public class Vehicle{
 	
 	private String brokerAddress = "";
-	private String licensePlate = "BUTTSEX";
+	private String licensePlate = "BUTTSEXXXXXXXXXXXXXXXXXX";
+	private int parkingDuration = 0;
 	CoapClient coapClient = null;
 	
 	private void log(String message){
@@ -28,8 +37,7 @@ public class Vehicle{
 	
 	public Vehicle() throws IOException {
 
-		log("discvering broker ...");
-		
+		log("PART 1. discvering broker ...");
 		
 		int nrTries = 3;
 		while (brokerAddress.equals("") && --nrTries >= 0){
@@ -37,30 +45,79 @@ public class Vehicle{
 		}
 		
 		if (brokerAddress.equals("")){
-			log("could not find broker!");
-		
+			log("could not find broker!");		
+			
 			// it dies
+			return;
 		}
-		else{
-			log("found broker at " + brokerAddress);
+	
+		log("found broker at " + brokerAddress);
+
+		// it's good, now connect to the coap server
+		CoapClient coapClient = new CoapClient("coap://" + brokerAddress + ":5683");
+		
+		
+	/*	Request request = new Request(Code.GET);
+		OptionSet optionSet = new OptionSet();
+		optionSet.addURIPath("/rd/XedGlUtyUN/6/0/0");
+		request.setOptions(optionSet);
+		CoapResponse coapResponse = coapClient.advanced(request);
+		log("response: " + coapResponse.getResponseText());
+		*/
+
+		// TODO: change here to POST - register the vehicle
+		Request request = new Request(Code.POST);
+		OptionSet optionSet = new OptionSet();
+		optionSet.addURIPath("Register");
+		optionSet.addURIQuery("DriverID=" + licensePlate);
+		request.setOptions(optionSet);
+
+		log("PART 2. sending the registration request ...");
+		CoapResponse coapResponse = coapClient.advanced(request);
+
+		if (!ResponseCode.isSuccess(coapResponse.getCode())){
+			log("could not register to broker!");
 			
-			// it's good, now connect to the coap server
-			CoapClient coapClient = new CoapClient("coap://" + brokerAddress + ":5683");
-					
+			// it dies
+			return;
+		}
+
+		log("successufully registered to broker.");		
+		
+		log("PART 3. waiting for user input");
+				
+		// http://stackoverflow.com/questions/5287538/how-can-i-get-the-user-input-in-java
+		Scanner reader = new Scanner(System.in);  // Reading from System.in
+		System.out.println("Enter desired parking duration in hours (Integer): ");
+		parkingDuration = reader.nextInt(); // Scans the next token of the input as an int.
+		
+		
+		//send int in post request named..?
+		log("PART 4. sending request for list of parking spots ...");
+		
+		// prepare the request - GET /FreeParkingSpots?Duration=<duration>
+		request = new Request(Code.GET);
+		optionSet = new OptionSet();
+		optionSet.addURIPath("FreeParkingSpots");
+		optionSet.addURIQuery("Duration="+parkingDuration);
+		request.setOptions(optionSet);
+		coapResponse = coapClient.advanced(request);
+		
+		if (!ResponseCode.isSuccess(coapResponse.getCode())){
+			log("could not retrieve list of parking spots from broker!");
 			
-			// TODO: change here to POST - register the vehicle
-			Request request = new Request(Code.POST);
-			OptionSet optionSet = new OptionSet();
-			optionSet.addURIPath("Register");
-			optionSet.addURIQuery("DriverID="+licensePlate);
-			request.setOptions(optionSet);
-			
-			log("sending the get request ...");			
-			CoapResponse coapResponse = coapClient.advanced(request);
-			
-			log("response: " + coapResponse.getCode() + " " + coapResponse.getResponseText());
-			
-		}	
+			// it dies
+			// TODO: just retry?
+			return;
+		}
+		
+		String receivedMessage = new String( coapResponse.getPayload(), StandardCharsets.UTF_8 );
+		
+		Gson gson = new Gson();
+		ArrayList<String> freeParkingSpots = gson.fromJson(receivedMessage, ArrayList.class); 
+				
+		// NOT as the protocol - without the first "NumFreeSpots":INT
+		log("received : " + freeParkingSpots);
 	}
 	
 	private String disoverBroker() {
